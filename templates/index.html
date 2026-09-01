@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>DeepVerify</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: #0d1117;
+            color: #e6edf3;
+            font-family: Arial, sans-serif;
+        }
+
+        .wrap {
+            max-width: 1050px;
+            margin: auto;
+            padding: 40px 20px;
+        }
+
+        /* =========================
+           HEADER
+        ========================= */
+
+        .hero {
+            margin-bottom: 30px;
+        }
+
+        .hero h1 {
+            font-size: 42px;
+            margin: 0 0 8px;
+        }
+
+        .hero p {
+            color: #9da7b3;
+            font-size: 16px;
+            margin: 0;
+        }
+
+        /* =========================
+           INPUT CARDS
+        ========================= */
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-top: 25px;
+        }
+
+        .card {
+            background: #151b23;
+            border: 1px solid #2a3441;
+            border-radius: 18px;
+            padding: 22px;
+        }
+
+        .card h2 {
+            margin-top: 0;
+        }
+
+        /* =========================
+           FORM ELEMENTS
+        ========================= */
+
+        input[type="file"],
+        textarea {
+            width: 100%;
+            background: #0d1117;
+            color: white;
+            border: 1px solid #344150;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 8px 0 12px;
+        }
+
+        textarea {
+            resize: vertical;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: white;
+            color: #111;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        small {
+            color: #8e99a6;
+        }
+
+        /* =========================
+           ERROR MESSAGE
+        ========================= */
+
+        .error {
+            padding: 14px;
+            background: #3a1717;
+            border: 1px solid #743333;
+            border-radius: 10px;
+            margin-top: 18px;
+            color: #ffb3b3;
+        }
+
+        /* =========================
+           RESULT
+        ========================= */
+
+        .result {
+            margin-top: 22px;
+        }
+
+        .score {
+            font-size: 64px;
+            font-weight: 800;
+            margin: 10px 0;
+        }
+
+        .result-label {
+            font-size: 20px;
+            margin-bottom: 20px;
+        }
+
+        /* =========================
+           EVIDENCE
+        ========================= */
+
+        .evidence {
+            display: grid;
+            gap: 10px;
+        }
+
+        .ev {
+            padding: 14px;
+            border: 1px solid #2a3441;
+            border-radius: 12px;
+            background: #10161d;
+        }
+
+        .ev strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        /* Risk bar */
+
+        .bar {
+            height: 8px;
+            background: #26303c;
+            border-radius: 20px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+
+        .bar .risk-fill {
+            display: block;
+            height: 100%;
+            background: white;
+            width: 0;
+        }
+
+        /* =========================
+           VIDEO INFORMATION
+        ========================= */
+
+        .video-info {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .video-stat {
+            background: #10161d;
+            border: 1px solid #2a3441;
+            border-radius: 10px;
+            padding: 12px 16px;
+        }
+
+        /* =========================
+           FACT CHECKS
+        ========================= */
+
+        .fc {
+            margin-top: 10px;
+            padding: 12px;
+            border-left: 3px solid white;
+            background: #10161d;
+            border-radius: 6px;
+        }
+
+        .fc strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .fc a {
+            color: white;
+        }
+
+        /* =========================
+           FRAME TIMELINE
+        ========================= */
+
+        .frame-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            padding: 12px;
+            border: 1px solid #2a3441;
+            border-radius: 10px;
+            background: #10161d;
+        }
+
+        .frame-risk {
+            min-width: 100px;
+            text-align: right;
+            font-weight: bold;
+        }
+
+        /* =========================
+           RESPONSIVE
+        ========================= */
+
+        @media (max-width: 800px) {
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero h1 {
+                font-size: 32px;
+            }
+
+            .score {
+                font-size: 50px;
+            }
+
+            .frame-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .frame-risk {
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+
+
+<body>
+
+    <div class="wrap">
+
+        <!-- =========================================
+             HEADER
+        ========================================== -->
+
+        <div class="hero">
+
+            <h1>DeepVerify</h1>
+
+            <p>
+                Multimodal deepfake + misinformation verification
+                — with evidence, not just a verdict.
+            </p>
+
+        </div>
+
+
+        <!-- =========================================
+             INPUT SECTION
+        ========================================== -->
+
+        <div class="grid">
+
+            <!-- MEDIA ANALYSIS -->
+
+            <div class="card">
+
+                <h2>Analyze Media</h2>
+
+                <form method="post" enctype="multipart/form-data">
+
+                    <input
+                        type="hidden"
+                        name="mode"
+                        value="media"
+                    >
+
+                    <input
+                        type="file"
+                        name="file"
+                        accept=".png,.jpg,.jpeg,.webp,.mp4,.mov,.avi,.wav,.mp3,.m4a"
+                        required
+                    >
+
+                    <button type="submit">
+                        Analyze File
+                    </button>
+
+                </form>
+
+                <small>
+                    Supports image, video and audio files.
+                    Video currently uses sampled frames.
+                </small>
+
+            </div>
+
+
+            <!-- CLAIM VERIFICATION -->
+
+            <div class="card">
+
+                <h2>Verify a Claim</h2>
+
+                <form method="post">
+
+                    <input
+                        type="hidden"
+                        name="mode"
+                        value="claim"
+                    >
+
+                    <textarea
+                        name="claim"
+                        rows="6"
+                        placeholder="Paste a news claim, optionally with a source URL..."
+                        required
+                    ></textarea>
+
+                    <button type="submit">
+                        Verify Claim
+                    </button>
+
+                </form>
+
+                <small>
+                    Fact-check lookup works when
+                    FACTCHECK_API_KEY is configured.
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================================
+             ERROR
+        ========================================== -->
+
+        {% if error %}
+
+        <div class="error">
+
+            {{ error }}
+
+        </div>
+
+        {% endif %}
+
+
+        <!-- =========================================
+             RESULTS
+        ========================================== -->
+
+        {% if result %}
+
+        <div class="card result">
+
+            <h2>
+                Verification Report
+            </h2>
+
+
+            <!-- TRUST SCORE -->
+
+            <div class="score">
+
+                {{ result.trust_score }}/100
+
+            </div>
+
+
+            <div class="result-label">
+
+                {{ result.label }}
+
+            </div>
+
+
+            <p>
+
+                {{ result.summary }}
+
+            </p>
+
+
+            <!-- =====================================
+                 MODEL OUTPUT
+            ====================================== -->
+
+            {% if result.model_predictions %}
+
+            <h3>
+                Model Output
+            </h3>
+
+            <div class="evidence">
+
+                {% for p in result.model_predictions %}
+
+                <div class="ev">
+
+                    <strong>
+                        {{ p.label }}
+                    </strong>
+
+                    {{ (p.score * 100)|round(1) }}%
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- =====================================
+                 VIDEO INFORMATION
+            ====================================== -->
+
+            {% if result.video_info %}
+
+            <h3>
+                Video Information
+            </h3>
+
+            <div class="video-info">
+
+                <div class="video-stat">
+
+                    <strong>
+                        Duration
+                    </strong>
+
+                    {{ result.video_info.duration }} seconds
+
+                </div>
+
+
+                <div class="video-stat">
+
+                    <strong>
+                        FPS
+                    </strong>
+
+                    {{ result.video_info.fps }}
+
+                </div>
+
+
+                <div class="video-stat">
+
+                    <strong>
+                        Frames
+                    </strong>
+
+                    {{ result.video_info.frames }}
+
+                </div>
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- =====================================
+                 WHY?
+            ====================================== -->
+
+            <h3>
+                Why?
+            </h3>
+
+
+            <div class="evidence">
+
+                {% for e in result.evidence %}
+
+                <div class="ev">
+
+                    <strong>
+                        {{ e.name }}
+                    </strong>
+
+
+                    <!--
+                        IMPORTANT:
+                        We don't put Jinja directly inside
+                        CSS anymore.
+
+                        Instead, the risk value is stored
+                        in a data attribute.
+                    -->
+
+                    <div class="bar">
+
+                        <span
+                            class="risk-fill"
+                            data-risk="{{ e.risk }}"
+                        ></span>
+
+                    </div>
+
+
+                    <p>
+
+                        {{ e.detail }}
+
+                    </p>
+
+
+                    <small>
+
+                        Risk:
+                        {{ e.risk|round(1) }}/100
+
+                        ·
+
+                        Weight:
+                        {{ e.weight }}
+
+                    </small>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- =====================================
+                 VIDEO FRAME TIMELINE
+            ====================================== -->
+
+            {% if result.frame_results %}
+
+            <h3>
+                Frame Timeline
+            </h3>
+
+
+            <div class="evidence">
+
+                {% for f in result.frame_results %}
+
+                <div class="frame-item">
+
+                    <div>
+
+                        <strong>
+                            Frame {{ f.frame }}
+                        </strong>
+
+                        <small>
+                            Timestamp: {{ f.time }} seconds
+                        </small>
+
+                    </div>
+
+
+                    <div class="frame-risk">
+
+                        {{ (f.fake_probability * 100)|round(1) }}%
+
+                        <br>
+
+                        <small>
+                            fake probability
+                        </small>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+            {% endif %}
+
+
+            <!-- =====================================
+                 FACT CHECK RESULTS
+            ====================================== -->
+
+            {% if result.factchecks %}
+
+            <h3>
+                Existing Fact Checks
+            </h3>
+
+
+            {% for fc in result.factchecks %}
+
+            <div class="fc">
+
+                <strong>
+
+                    {{ fc.publisher or "Publisher" }}
+
+                </strong>
+
+
+                <div>
+
+                    <strong>
+                        Rating:
+                    </strong>
+
+                    {{ fc.rating or "Rating unavailable" }}
+
+                </div>
+
+
+                {% if fc.title %}
+
+                <div>
+
+                    {{ fc.title }}
+
+                </div>
+
+                {% endif %}
+
+
+                {% if fc.url %}
+
+                <br>
+
+                <a
+                    href="{{ fc.url }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                >
+                    Read Full Fact Check
+                </a>
+
+                {% endif %}
+
+            </div>
+
+            {% endfor %}
+
+            {% endif %}
+
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- =============================================
+         JAVASCRIPT
+    ============================================== -->
+
+    <script>
+
+        /*
+         * Convert data-risk values into
+         * the visual width of the risk bars.
+         *
+         * Example:
+         *
+         * data-risk="75"
+         *
+         * becomes:
+         *
+         * width: 75%
+         */
+
+        document
+            .querySelectorAll(".risk-fill")
+            .forEach(function (bar) {
+
+                const risk = parseFloat(
+                    bar.dataset.risk
+                );
+
+                if (!isNaN(risk)) {
+
+                    const safeRisk = Math.max(
+                        0,
+                        Math.min(100, risk)
+                    );
+
+                    bar.style.width =
+                        safeRisk + "%";
+                }
+
+            });
+
+    </script>
+
+</body>
+
+</html>
