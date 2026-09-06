@@ -260,6 +260,183 @@
                 text-align: left;
             }
         }
+
+        /* =========================
+        DEEPVERIFY RESULT UI
+        ========================= */
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
+            margin-top: 20px;
+            padding: 25px;
+            background: #10161d;
+            border: 1px solid #2a3441;
+            border-radius: 16px;
+        }
+
+        .score-box {
+            flex: 1;
+        }
+
+        .score {
+            font-size: 72px;
+            line-height: 1;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .score-label {
+            color: #8e99a6;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .verdict-box {
+            flex: 1;
+            text-align: right;
+        }
+
+        .verdict {
+            font-size: 26px;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .verdict-subtitle {
+            color: #9da7b3;
+        }
+
+        /* Probability section */
+
+        .probability-section {
+            margin-top: 20px;
+        }
+
+        .probability-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .probability-bar {
+            height: 12px;
+            background: #26303c;
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .real-fill {
+            height: 100%;
+            background: #72d572;
+        }
+
+        .ai-fill {
+            height: 100%;
+            background: #e56b6b;
+        }
+
+        .probability-values {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .real-value {
+            color: #72d572;
+            font-weight: bold;
+        }
+
+        .ai-value {
+            color: #e56b6b;
+            font-weight: bold;
+        }
+
+        /* Evidence cards */
+
+        .evidence-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-top: 15px;
+        }
+
+        .evidence-card {
+            background: #10161d;
+            border: 1px solid #2a3441;
+            border-radius: 14px;
+            padding: 18px;
+        }
+
+        .evidence-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .evidence-status {
+            font-size: 13px;
+            color: #8e99a6;
+            margin-bottom: 12px;
+        }
+
+        .evidence-risk {
+            font-size: 13px;
+            margin-top: 10px;
+            color: #9da7b3;
+        }
+
+        /* Technical details */
+
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .tech-item {
+            background: #10161d;
+            border: 1px solid #2a3441;
+            border-radius: 12px;
+            padding: 14px;
+        }
+
+        .tech-item span {
+            display: block;
+            color: #8e99a6;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .tech-item strong {
+            font-size: 16px;
+        }
+
+        /* Responsive */
+
+        @media (max-width: 800px) {
+
+            .result-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .verdict-box {
+                text-align: left;
+            }
+
+            .evidence-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tech-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
     </style>
 </head>
 
@@ -298,18 +475,10 @@
 
                 <form method="post" enctype="multipart/form-data">
 
-                    <input
-                        type="hidden"
-                        name="mode"
-                        value="media"
-                    >
+                    <input type="hidden" name="mode" value="media">
 
-                    <input
-                        type="file"
-                        name="file"
-                        accept=".png,.jpg,.jpeg,.webp,.mp4,.mov,.avi,.wav,.mp3,.m4a"
-                        required
-                    >
+                    <input type="file" name="file" accept=".png,.jpg,.jpeg,.webp,.mp4,.mov,.avi,.wav,.mp3,.m4a"
+                        required>
 
                     <button type="submit">
                         Analyze File
@@ -333,18 +502,10 @@
 
                 <form method="post">
 
-                    <input
-                        type="hidden"
-                        name="mode"
-                        value="claim"
-                    >
+                    <input type="hidden" name="mode" value="claim">
 
-                    <textarea
-                        name="claim"
-                        rows="6"
-                        placeholder="Paste a news claim, optionally with a source URL..."
-                        required
-                    ></textarea>
+                    <textarea name="claim" rows="6" placeholder="Paste a news claim, optionally with a source URL..."
+                        required></textarea>
 
                     <button type="submit">
                         Verify Claim
@@ -385,33 +546,73 @@
 
         <div class="card result">
 
-            <h2>
-                Verification Report
-            </h2>
+            <h2>Verification Report</h2>
+
+            <div class="result-header">
+
+                <div class="score-box">
+
+                    <div class="score">
+                        {{ result.trust_score }}
+                    </div>
+
+                    <div class="score-label">
+                        TRUST SCORE / 100
+                    </div>
+
+                </div>
 
 
-            <!-- TRUST SCORE -->
+                <div class="verdict-box">
 
-            <div class="score">
+                    <div class="verdict">
+                        {{ result.label }}
+                    </div>
 
-                {{ result.trust_score }}/100
+                    <div class="verdict-subtitle">
+                        {{ result.summary }}
+                    </div>
+
+                </div>
 
             </div>
 
+            {% if result.real_probability is defined %}
 
-            <div class="result-label">
+            <div class="probability-section">
 
-                {{ result.label }}
+                <h3>AI Generation Analysis</h3>
+
+                <div class="probability-header">
+                    <span>Real</span>
+                    <span>AI-generated</span>
+                </div>
+
+                <div class="probability-bar">
+
+                    <div class="real-fill" data-probability="{{ result.real_probability }}">
+                    </div>
+
+                    <div class="ai-fill" data-probability="{{ result.ai_probability }}">
+                    </div>
+
+                </div>
+
+                <div class="probability-values">
+
+                    <div class="real-value">
+                        REAL {{ result.real_probability }}%
+                    </div>
+
+                    <div class="ai-value">
+                        AI {{ result.ai_probability }}%
+                    </div>
+
+                </div>
 
             </div>
 
-
-            <p>
-
-                {{ result.summary }}
-
-            </p>
-
+            {% endif %}
 
             <!-- =====================================
                  MODEL OUTPUT
@@ -496,232 +697,269 @@
             <!-- =====================================
                  WHY?
             ====================================== -->
+            <h3>Why this result?</h3>
 
-            <h3>
-                Why?
-            </h3>
-
-
-            <div class="evidence">
+            <div class="evidence-grid">
 
                 {% for e in result.evidence %}
 
-                <div class="ev">
+                <div class="evidence-card">
 
-                    <strong>
+                    <div class="evidence-title">
                         {{ e.name }}
-                    </strong>
+                    </div>
 
+                    <div class="evidence-status">
 
-                    <!--
-                        IMPORTANT:
-                        We don't put Jinja directly inside
-                        CSS anymore.
+                        {% if e.risk <= 20 %} Low risk signal {% elif e.risk <=50 %} Moderate signal {% else %} Strong
+                            risk signal {% endif %} </div>
 
-                        Instead, the risk value is stored
-                        in a data attribute.
-                    -->
+                            <div class="bar">
 
-                    <div class="bar">
+                                <span class="risk-fill" data-risk="{{ e.risk }}">
+                                </span>
 
-                        <span
-                            class="risk-fill"
-                            data-risk="{{ e.risk }}"
-                        ></span>
+                            </div>
+
+                            <p>
+                                {{ e.detail }}
+                            </p>
+
+                            <div class="evidence-risk">
+
+                                Risk:
+                                <strong>{{ e.risk|round(1) }}/100</strong>
+
+                                &nbsp; · &nbsp;
+
+                                Weight:
+                                <strong>{{ e.weight }}</strong>
+
+                            </div>
 
                     </div>
 
-
-                    <p>
-
-                        {{ e.detail }}
-
-                    </p>
-
-
-                    <small>
-
-                        Risk:
-                        {{ e.risk|round(1) }}/100
-
-                        ·
-
-                        Weight:
-                        {{ e.weight }}
-
-                    </small>
+                    {% endfor %}
 
                 </div>
 
-                {% endfor %}
+                
 
-            </div>
+                {% if result.forensics %}
+
+                <h3>
+                    Technical Image Analysis
+                </h3>
+
+                <div class="tech-grid">
+
+                    <div class="tech-item">
+                        <span>Resolution</span>
+                        <strong>
+                            {{ result.forensics.width }}
+                            ×
+                            {{ result.forensics.height }}
+                        </strong>
+                    </div>
+
+                    <div class="tech-item">
+                        <span>Aspect Ratio</span>
+                        <strong>
+                            {{ result.forensics.aspect_ratio }}
+                        </strong>
+                    </div>
+
+                    <div class="tech-item">
+                        <span>Sharpness</span>
+                        <strong>
+                            {{ result.forensics.sharpness }}
+                        </strong>
+                    </div>
+
+                    <div class="tech-item">
+                        <span>Noise Level</span>
+                        <strong>
+                            {{ result.forensics.noise_level }}
+                        </strong>
+                    </div>
+
+                    <div class="tech-item">
+                        <span>Entropy</span>
+                        <strong>
+                            {{ result.forensics.entropy }}
+                        </strong>
+                    </div>
+
+                </div>
+
+                {% endif %}
 
 
-            <!-- =====================================
+                
+
+                <!-- =====================================
                  VIDEO FRAME TIMELINE
             ====================================== -->
 
-            {% if result.frame_results %}
+                {% if result.frame_results %}
 
-            <h3>
-                Frame Timeline
-            </h3>
+                <h3>
+                    Frame Timeline
+                </h3>
 
 
-            <div class="evidence">
+                <div class="evidence">
 
-                {% for f in result.frame_results %}
+                    {% for f in result.frame_results %}
 
-                <div class="frame-item">
+                    <div class="frame-item">
+
+                        <div>
+
+                            <strong>
+                                Frame {{ f.frame }}
+                            </strong>
+
+                            <small>
+                                Timestamp: {{ f.time }} seconds
+                            </small>
+
+                        </div>
+
+
+                        <div class="frame-risk">
+
+                            {{ (f.fake_probability * 100)|round(1) }}%
+
+                            <br>
+
+                            <small>
+                                fake probability
+                            </small>
+
+                        </div>
+
+                    </div>
+
+                    {% endfor %}
+
+                </div>
+
+                {% endif %}
+
+
+                <!-- =====================================
+                 FACT CHECK RESULTS
+            ====================================== -->
+
+                {% if result.factchecks %}
+
+                <h3>
+                    Existing Fact Checks
+                </h3>
+
+
+                {% for fc in result.factchecks %}
+
+                <div class="fc">
+
+                    <strong>
+
+                        {{ fc.publisher or "Publisher" }}
+
+                    </strong>
+
 
                     <div>
 
                         <strong>
-                            Frame {{ f.frame }}
+                            Rating:
                         </strong>
 
-                        <small>
-                            Timestamp: {{ f.time }} seconds
-                        </small>
+                        {{ fc.rating or "Rating unavailable" }}
 
                     </div>
 
 
-                    <div class="frame-risk">
+                    {% if fc.title %}
 
-                        {{ (f.fake_probability * 100)|round(1) }}%
+                    <div>
 
-                        <br>
-
-                        <small>
-                            fake probability
-                        </small>
+                        {{ fc.title }}
 
                     </div>
+
+                    {% endif %}
+
+
+                    {% if fc.url %}
+
+                    <br>
+
+                    <a href="{{ fc.url }}" target="_blank" rel="noopener noreferrer">
+                        Read Full Fact Check
+                    </a>
+
+                    {% endif %}
 
                 </div>
 
                 {% endfor %}
 
-            </div>
-
-            {% endif %}
-
-
-            <!-- =====================================
-                 FACT CHECK RESULTS
-            ====================================== -->
-
-            {% if result.factchecks %}
-
-            <h3>
-                Existing Fact Checks
-            </h3>
-
-
-            {% for fc in result.factchecks %}
-
-            <div class="fc">
-
-                <strong>
-
-                    {{ fc.publisher or "Publisher" }}
-
-                </strong>
-
-
-                <div>
-
-                    <strong>
-                        Rating:
-                    </strong>
-
-                    {{ fc.rating or "Rating unavailable" }}
-
-                </div>
-
-
-                {% if fc.title %}
-
-                <div>
-
-                    {{ fc.title }}
-
-                </div>
-
                 {% endif %}
 
 
-                {% if fc.url %}
-
-                <br>
-
-                <a
-                    href="{{ fc.url }}"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    Read Full Fact Check
-                </a>
-
-                {% endif %}
-
             </div>
 
-            {% endfor %}
-
             {% endif %}
-
 
         </div>
 
-        {% endif %}
 
-    </div>
-
-
-    <!-- =============================================
+        <!-- =============================================
          JAVASCRIPT
     ============================================== -->
 
-    <script>
+        <script>
 
-        /*
-         * Convert data-risk values into
-         * the visual width of the risk bars.
-         *
-         * Example:
-         *
-         * data-risk="75"
-         *
-         * becomes:
-         *
-         * width: 75%
-         */
+            /*
+             * Convert data-risk values into
+             * the visual width of the risk bars.
+             *
+             * Example:
+             *
+             * data-risk="75"
+             *
+             * becomes:
+             *
+             * width: 75%
+             */
 
-        document
-            .querySelectorAll(".risk-fill")
-            .forEach(function (bar) {
+            document
+                .querySelectorAll(".risk-fill")
+                .forEach(function (bar) {
 
-                const risk = parseFloat(
-                    bar.dataset.risk
-                );
-
-                if (!isNaN(risk)) {
-
-                    const safeRisk = Math.max(
-                        0,
-                        Math.min(100, risk)
+                    const risk = parseFloat(
+                        bar.dataset.risk
                     );
 
-                    bar.style.width =
-                        safeRisk + "%";
-                }
+                    if (!isNaN(risk)) {
 
+                        const safeRisk = Math.max(
+                            0,
+                            Math.min(100, risk)
+                        );
+
+                        bar.style.width =
+                            safeRisk + "%";
+                    }
+
+                });
+            document.querySelectorAll("[data-probability]").forEach(function (bar) {
+                const probability = bar.dataset.probability;
+                bar.style.width = probability + "%";
             });
-
-    </script>
+        </script>
 
 </body>
 

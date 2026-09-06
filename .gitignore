@@ -5,3 +5,5 @@ __pycache__/
 .env
 *.db
 uploads/
+kaan_model/model.safetensors
+kaan_model/

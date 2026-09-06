@@ -1,349 +1,195 @@
-from pathlib import Path
-
-from PIL import Image, ExifTags
-from transformers import pipeline
-
+import json
+import torch
+import timm
+from PIL import Image
+from torchvision import transforms
+from safetensors.torch import load_file
+from .metadata_analyzer import analyze_metadata
+from .forensics_analyzer import analyze_forensics
 from .scoring import score_from_evidence, label
 
 
-# ============================================================
-# AI IMAGE DETECTION MODEL
-# ============================================================
-
-_MODEL = None
-
-MODEL_NAME = "capcheck/ai-image-detection"
+MODEL_DIR = "kaan_model"
 
 
-def get_model():
-    """
-    Load the AI-generated image detector.
+# -----------------------------
+# Load model configuration
+# -----------------------------
+with open(f"{MODEL_DIR}/config.json", "r") as f:
+    config = json.load(f)
 
-    The model is loaded only once and then reused
-    for subsequent images.
-    """
-
-    global _MODEL
-
-    if _MODEL is None:
-        print("Loading AI image detection model...")
-
-        _MODEL = pipeline(
-            "image-classification",
-            model=MODEL_NAME
-        )
-
-        print("AI image detection model loaded.")
-
-    return _MODEL
+TEMPERATURE = config.get("temperature", 1.0)
 
 
-# ============================================================
-# METADATA ANALYSIS
-# ============================================================
+# -----------------------------
+# Load Kaan AI detector
+# -----------------------------
+model = timm.create_model(
+    "vit_base_patch16_clip_224.openai",
+    pretrained=False,
+    num_classes=1,
+    img_size=256
+)
 
-def metadata_checks(path):
-    """
-    Check image metadata.
+weights = load_file(f"{MODEL_DIR}/model.safetensors")
+model.load_state_dict(weights)
 
-    Missing EXIF is NOT treated as proof of AI generation.
-    Many websites and messaging apps remove metadata.
-    """
+model.eval()
 
-    evidence = []
+
+# -----------------------------
+# Image preprocessing
+# -----------------------------
+transform = transforms.Compose([
+    transforms.Resize((256, 256)),
+    transforms.ToTensor(),
+    transforms.Normalize(
+        mean=[0.48145466, 0.4578275, 0.40821073],
+        std=[0.26862954, 0.26130258, 0.27577711]
+    )
+])
+
+
+# -----------------------------
+# Main detection function
+# -----------------------------
+def detect_ai_image(image_path):
 
     try:
+        image = Image.open(image_path).convert("RGB")
+        image = transform(image).unsqueeze(0)
 
-        img = Image.open(path)
+        with torch.no_grad():
+            logit = model(image).squeeze().item()
 
-        exif = img.getexif()
+        # Temperature calibration
+        calibrated_logit = logit / TEMPERATURE
 
-        if not exif:
+        p_real = torch.sigmoid(
+            torch.tensor(calibrated_logit)
+        ).item()
 
-            evidence.append({
-                "name": "Missing EXIF metadata",
-                "risk": 12,
-                "weight": 0.25,
-                "detail": (
-                    "No EXIF metadata was found. "
-                    "This can happen with AI-generated images, "
-                    "but social media platforms and editing software "
-                    "also commonly remove metadata."
-                )
-            })
+        p_ai = 1 - p_real
+
+        # -----------------------------
+        # Decision threshold
+        # -----------------------------
+        if p_real >= 0.60:
+            prediction = "REAL"
+
+        elif p_real <= 0.40:
+            prediction = "AI-GENERATED"
 
         else:
+            prediction = "UNCERTAIN"
 
-            names = [
-                ExifTags.TAGS.get(k, str(k))
-                for k in exif.keys()
-            ]
-
-            evidence.append({
-                "name": "EXIF metadata present",
-                "risk": 0,
-                "weight": 0.15,
-                "detail": (
-                    "Metadata fields found: "
-                    + ", ".join(names[:8])
-                )
-            })
+        return {
+            "prediction": prediction,
+            "real_probability": round(p_real * 100, 2),
+            "ai_probability": round(p_ai * 100, 2),
+            "confidence": round(max(p_real, p_ai) * 100, 2)
+        }
 
     except Exception as e:
 
-        evidence.append({
-            "name": "Metadata analysis failed",
-            "risk": 20,
-            "weight": 0.10,
-            "detail": str(e)
-        })
-
-    return evidence
-
-
-# ============================================================
-# IMAGE ANALYSIS
-# ============================================================
-
-def analyze_image(path: Path):
-
-    # --------------------------------------------------------
-    # Run AI-generated image detector
-    # --------------------------------------------------------
-
-    model = get_model()
-
-    predictions = model(
-        str(path),
-        top_k=2
-    )
-
-    print("Model predictions:")
-    print(predictions)
-
-
-    # --------------------------------------------------------
-    # Extract REAL / FAKE probabilities
-    # --------------------------------------------------------
-
-    fake_probability = 0.0
-    real_probability = 0.0
-
-    raw_predictions = []
-
-    for prediction in predictions:
-
-        label_name = str(prediction["label"])
-        score = float(prediction["score"])
-
-        raw_predictions.append({
-            "label": label_name,
-            "score": round(score, 4)
-        })
-
-        normalized_label = label_name.lower()
-
-        if (
-            "fake" in normalized_label
-            or "ai" in normalized_label
-            or "generated" in normalized_label
-            or "synthetic" in normalized_label
-        ):
-
-            fake_probability = max(
-                fake_probability,
-                score
-            )
-
-        elif (
-            "real" in normalized_label
-            or "human" in normalized_label
-            or "authentic" in normalized_label
-        ):
-
-            real_probability = max(
-                real_probability,
-                score
-            )
-
-
-    # --------------------------------------------------------
-    # Safety fallback
-    # --------------------------------------------------------
-
-    if fake_probability == 0 and real_probability == 0:
-
-        # If model labels are unexpected, use the first
-        # prediction rather than pretending we know the answer.
-
-        first = predictions[0]
-
-        first_label = str(first["label"]).lower()
-        first_score = float(first["score"])
-
-        if (
-            "fake" in first_label
-            or "ai" in first_label
-            or "generated" in first_label
-        ):
-
-            fake_probability = first_score
-
-        else:
-
-            real_probability = first_score
-
-
-    # --------------------------------------------------------
-    # AI detector evidence
-    # --------------------------------------------------------
-
-    fake_risk = fake_probability * 100
-
-    if fake_probability >= 0.80:
-
-        detector_detail = (
-            f"The AI-image detector estimates a "
-            f"{fake_probability * 100:.1f}% probability "
-            f"that this image is AI-generated."
-        )
-
-    elif fake_probability >= 0.50:
-
-        detector_detail = (
-            f"The AI-image detector found moderate evidence "
-            f"of synthetic generation "
-            f"({fake_probability * 100:.1f}% probability)."
-        )
-
-    else:
-
-        detector_detail = (
-            f"The AI-image detector estimates a "
-            f"{fake_probability * 100:.1f}% probability "
-            f"of AI generation."
-        )
-
-
-    evidence = [
-
-        {
-            "name": "AI-generated image detector",
-            "risk": fake_risk,
-            "weight": 0.75,
-            "detail": detector_detail
+        return {
+            "prediction": "ERROR",
+            "real_probability": 0,
+            "ai_probability": 0,
+            "confidence": 0,
+            "error": str(e)
         }
 
+def analyze_image(image_path):
+
+    # --------------------------------
+    # 1. AI detector
+    # --------------------------------
+    ai_result = detect_ai_image(image_path)
+
+    # --------------------------------
+    # 2. Metadata analysis
+    # --------------------------------
+    metadata_result = analyze_metadata(image_path)
+
+    # --------------------------------
+    # 3. Pixel-level forensics
+    # --------------------------------
+    forensic_result = analyze_forensics(image_path)
+
+    prediction = ai_result["prediction"]
+    real_probability = ai_result["real_probability"]
+    ai_probability = ai_result["ai_probability"]
+
+    # --------------------------------
+    # 4. Build evidence
+    # --------------------------------
+    evidence = [
+        {
+            "name": "AI Image Detector",
+            "risk": ai_probability,
+            "weight": 1.0,
+            "detail": (
+                f"The AI detector estimates a "
+                f"{ai_probability:.2f}% probability that "
+                f"this image is AI-generated and "
+                f"{real_probability:.2f}% probability that "
+                f"it is real."
+            )
+        },
+
+        {
+            "name": "Metadata Analysis",
+            "risk": metadata_result["risk"],
+            "weight": metadata_result["weight"],
+            "detail": metadata_result["detail"]
+        },
+
+        {
+            "name": "Pixel-Level Forensics",
+            "risk": forensic_result["risk"],
+            "weight": forensic_result["weight"],
+            "detail": forensic_result["detail"]
+        }
     ]
 
+    # --------------------------------
+    # 5. Calculate Trust Score
+    # --------------------------------
+    trust_score = score_from_evidence(evidence)
 
-    # --------------------------------------------------------
-    # Metadata checks
-    # --------------------------------------------------------
+    # --------------------------------
+    # 6. Overall label
+    # --------------------------------
+    result_label = label(trust_score)
 
-    evidence += metadata_checks(path)
-
-
-    # --------------------------------------------------------
-    # Image resolution check
-    # --------------------------------------------------------
-
-    try:
-
-        img = Image.open(path)
-
-        width, height = img.size
-
-        if min(width, height) < 256:
-
-            evidence.append({
-
-                "name": "Very small image",
-
-                "risk": 15,
-
-                "weight": 0.15,
-
-                "detail": (
-                    f"Resolution is {width}×{height}. "
-                    "Low resolution can reduce forensic confidence."
-                )
-
-            })
-
-        else:
-
-            evidence.append({
-
-                "name": "Image resolution",
-
-                "risk": 0,
-
-                "weight": 0.10,
-
-                "detail": (
-                    f"Image resolution is {width}×{height}."
-                )
-
-            })
-
-    except Exception:
-
-        pass
-
-
-    # --------------------------------------------------------
-    # Calculate final trust score
-    # --------------------------------------------------------
-
-    trust = score_from_evidence(evidence)
-
-
-    # --------------------------------------------------------
-    # Create human-readable summary
-    # --------------------------------------------------------
-
-    if fake_probability >= 0.80:
-
-        summary = (
-            "The image shows strong indicators of AI-generated "
-            "or synthetic content. The detector identified a "
-            "high probability of AI generation."
-        )
-
-    elif fake_probability >= 0.50:
-
-        summary = (
-            "The image contains indicators that may be "
-            "consistent with AI-generated content. "
-            "Additional verification is recommended."
-        )
-
-    else:
-
-        summary = (
-            "The detector found relatively low evidence of "
-            "AI generation. This does not prove that the image "
-            "is authentic."
-        )
-
-
-    # --------------------------------------------------------
-    # Return result to Flask
-    # --------------------------------------------------------
-
+    # --------------------------------
+    # 7. Final result
+    # --------------------------------
     return {
-
         "type": "image",
 
-        "trust_score": trust,
+        "trust_score": trust_score,
 
-        "label": label(trust),
+        "label": result_label,
 
-        "summary": summary,
+        "summary": (
+            "DeepVerify analyzed the image using "
+            "AI detection, metadata analysis, "
+            "and pixel-level forensic analysis."
+        ),
 
-        "model_predictions": raw_predictions,
+        "prediction": prediction,
+
+        "real_probability": real_probability,
+
+        "ai_probability": ai_probability,
+
+        "confidence": ai_result["confidence"],
+
+        "metadata": metadata_result,
+
+        "forensics": forensic_result,
 
         "evidence": evidence
-
     }
