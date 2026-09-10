@@ -1,144 +1,484 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>DeepVerify</title>
+    <title>DeepVerify — AI-Powered Verification</title>
 
     <style>
         * {
             box-sizing: border-box;
         }
 
+        :root {
+            --bg: #080b16;
+            --panel: rgba(17, 22, 40, 0.88);
+            --panel-2: rgba(12, 16, 30, 0.92);
+            --border: rgba(148, 163, 184, 0.16);
+            --text: #f8fafc;
+            --muted: #9aa7bd;
+            --purple: #8b5cf6;
+            --blue: #3b82f6;
+            --cyan: #22d3ee;
+            --green: #4ade80;
+            --red: #fb7185;
+            --yellow: #fbbf24;
+        }
+
         body {
             margin: 0;
-            background: #0d1117;
-            color: #e6edf3;
-            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            color: var(--text);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background:
+                radial-gradient(circle at 15% 5%, rgba(139, 92, 246, 0.20), transparent 30%),
+                radial-gradient(circle at 85% 10%, rgba(59, 130, 246, 0.16), transparent 28%),
+                linear-gradient(180deg, #090b18 0%, #070a13 100%);
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+            background-size: 42px 42px;
+            mask-image: linear-gradient(to bottom, black, transparent 80%);
         }
 
         .wrap {
-            max-width: 1050px;
-            margin: auto;
-            padding: 40px 20px;
+            width: min(1180px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 42px 0 70px;
+            position: relative;
+            z-index: 1;
         }
 
-        /* =========================
-           HEADER
-        ========================= */
+        /* ---------- HERO ---------- */
 
         .hero {
-            margin-bottom: 30px;
+            text-align: center;
+            margin-bottom: 38px;
+        }
+
+        .brand-mark {
+            width: 52px;
+            height: 52px;
+            margin: 0 auto 16px;
+            border-radius: 16px;
+            display: grid;
+            place-items: center;
+            font-size: 22px;
+            font-weight: 900;
+            color: white;
+            background: linear-gradient(135deg, var(--purple), var(--blue));
+            box-shadow: 0 16px 45px rgba(99, 102, 241, .30);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 13px;
+            border: 1px solid rgba(139, 92, 246, .32);
+            border-radius: 999px;
+            color: #c4b5fd;
+            background: rgba(139, 92, 246, .10);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+        }
+
+        .badge::before {
+            content: "";
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #a78bfa;
+            box-shadow: 0 0 12px #8b5cf6;
         }
 
         .hero h1 {
-            font-size: 42px;
-            margin: 0 0 8px;
+            margin: 17px 0 10px;
+            font-size: clamp(42px, 7vw, 72px);
+            line-height: 1;
+            font-weight: 900;
+            letter-spacing: -0.055em;
+            background: linear-gradient(90deg, #c4b5fd 0%, #818cf8 45%, #60a5fa 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
 
         .hero p {
-            color: #9da7b3;
+            max-width: 720px;
+            margin: 0 auto;
+            color: var(--muted);
             font-size: 16px;
-            margin: 0;
+            line-height: 1.65;
         }
 
-        /* =========================
-           INPUT CARDS
-        ========================= */
+        /* ---------- CARDS ---------- */
 
         .grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 18px;
-            margin-top: 25px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
         }
 
         .card {
-            background: #151b23;
-            border: 1px solid #2a3441;
-            border-radius: 18px;
-            padding: 22px;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(19, 24, 43, .95), rgba(11, 15, 29, .95));
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .22);
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            top: -120px;
+            right: -80px;
+            border-radius: 50%;
+            background: rgba(139, 92, 246, .12);
+            filter: blur(25px);
         }
 
         .card h2 {
-            margin-top: 0;
+            position: relative;
+            margin: 0 0 7px;
+            font-size: 21px;
         }
 
-        /* =========================
-           FORM ELEMENTS
-        ========================= */
+        .card-description {
+            color: var(--muted);
+            font-size: 13px;
+            margin: 0 0 20px;
+        }
 
-        input[type="file"],
+        /* ---------- UPLOAD / INPUT ---------- */
+
+        .upload-box {
+            position: relative;
+            border: 1px dashed rgba(139, 92, 246, .55);
+            border-radius: 17px;
+            padding: 24px 18px;
+            text-align: center;
+            background: rgba(139, 92, 246, .055);
+            transition: .2s ease;
+        }
+
+        .upload-box:hover {
+            border-color: rgba(96, 165, 250, .8);
+            background: rgba(59, 130, 246, .07);
+        }
+
+        .upload-icon {
+            width: 42px;
+            height: 42px;
+            margin: 0 auto 11px;
+            border-radius: 13px;
+            display: grid;
+            place-items: center;
+            color: #c4b5fd;
+            background: rgba(139, 92, 246, .14);
+            font-size: 20px;
+        }
+
+        input[type="file"] {
+            width: 100%;
+            color: #dbeafe;
+            font-size: 13px;
+            margin-top: 7px;
+        }
+
+        input[type="file"]::file-selector-button {
+            border: 0;
+            border-radius: 9px;
+            padding: 9px 13px;
+            margin-right: 9px;
+            color: white;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--purple), var(--blue));
+            cursor: pointer;
+        }
+
         textarea {
             width: 100%;
-            background: #0d1117;
-            color: white;
-            border: 1px solid #344150;
-            border-radius: 10px;
-            padding: 12px;
-            margin: 8px 0 12px;
+            min-height: 150px;
+            resize: vertical;
+            padding: 15px;
+            color: var(--text);
+            background: #090d19;
+            border: 1px solid rgba(148, 163, 184, .18);
+            border-radius: 14px;
+            outline: none;
+            font: inherit;
+            font-size: 13px;
         }
 
-        textarea {
-            resize: vertical;
+        textarea:focus {
+            border-color: rgba(139, 92, 246, .7);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, .10);
         }
 
         button {
             width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            background: white;
-            color: #111;
-            font-weight: bold;
+            border: 0;
+            border-radius: 12px;
+            padding: 13px 18px;
+            margin-top: 14px;
+            color: white;
+            font-weight: 800;
+            font-size: 14px;
             cursor: pointer;
+            background: linear-gradient(135deg, var(--purple), var(--blue));
+            box-shadow: 0 10px 25px rgba(79, 70, 229, .20);
+            transition: transform .18s ease, box-shadow .18s ease;
         }
 
         button:hover {
-            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 14px 32px rgba(79, 70, 229, .30);
         }
 
         small {
-            color: #8e99a6;
+            display: block;
+            margin-top: 12px;
+            color: #8290a8;
+            font-size: 12px;
+            line-height: 1.5;
         }
 
-        /* =========================
-           ERROR MESSAGE
-        ========================= */
+        /* ---------- ERROR ---------- */
 
         .error {
-            padding: 14px;
-            background: #3a1717;
-            border: 1px solid #743333;
-            border-radius: 10px;
-            margin-top: 18px;
-            color: #ffb3b3;
+            margin-top: 20px;
+            padding: 15px 17px;
+            border: 1px solid rgba(251, 113, 133, .35);
+            border-radius: 14px;
+            color: #fecdd3;
+            background: rgba(127, 29, 29, .20);
         }
 
-        /* =========================
-           RESULT
-        ========================= */
+        /* ---------- RESULT ---------- */
 
         .result {
-            margin-top: 22px;
+            margin-top: 24px;
+            padding: 28px;
         }
 
-        .score {
-            font-size: 64px;
-            font-weight: 800;
-            margin: 10px 0;
-        }
-
-        .result-label {
-            font-size: 20px;
+        .result > h2 {
             margin-bottom: 20px;
         }
 
-        /* =========================
-           EVIDENCE
-        ========================= */
+        .result-header {
+            display: grid;
+            grid-template-columns: 190px 1fr;
+            gap: 30px;
+            align-items: center;
+            padding: 25px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: rgba(6, 10, 22, .58);
+        }
+
+        .score-box {
+            display: flex;
+            justify-content: center;
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            position: relative;
+            background:
+                radial-gradient(circle at center, #0c1120 57%, transparent 58%),
+                conic-gradient(#8b5cf6 0deg, #3b82f6 270deg, #26304a 270deg);
+        }
+
+        .score-circle::after {
+            content: "";
+            position: absolute;
+            inset: 8px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,.07);
+        }
+
+        .score-inner {
+            text-align: center;
+            z-index: 1;
+        }
+
+        .score {
+            font-size: 38px;
+            line-height: 1;
+            font-weight: 900;
+            letter-spacing: -0.04em;
+        }
+
+        .score-label {
+            margin-top: 7px;
+            color: #8996ad;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: .08em;
+        }
+
+        .verdict {
+            font-size: 30px;
+            font-weight: 900;
+            margin-bottom: 8px;
+            background: linear-gradient(90deg, #ddd6fe, #93c5fd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .verdict-subtitle {
+            color: var(--muted);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        /* ---------- PROBABILITY ---------- */
+
+        .probability-section {
+            margin-top: 25px;
+        }
+
+        .section-heading {
+            margin: 0 0 13px;
+            font-size: 19px;
+        }
+
+        .probability-header,
+        .probability-values {
+            display: flex;
+            justify-content: space-between;
+            gap: 15px;
+            font-size: 13px;
+            font-weight: 800;
+        }
+
+        .probability-header {
+            color: #cbd5e1;
+            margin-bottom: 9px;
+        }
+
+        .probability-bar {
+            height: 13px;
+            display: flex;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #1c2538;
+            border: 1px solid rgba(255,255,255,.05);
+        }
+
+        .real-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #4ade80);
+        }
+
+        .ai-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #fb7185, #ef4444);
+        }
+
+        .probability-values {
+            margin-top: 9px;
+        }
+
+        .real-value { color: var(--green); }
+        .ai-value { color: var(--red); }
+
+        /* ---------- SECTION HEADINGS ---------- */
+
+        .report-section {
+            margin-top: 28px;
+        }
+
+        .report-section > h3 {
+            margin: 0 0 13px;
+            font-size: 19px;
+        }
+
+        /* ---------- EVIDENCE ---------- */
+
+        .evidence-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .evidence-card,
+        .ev,
+        .tech-item,
+        .video-stat,
+        .frame-item,
+        .fc {
+            background: rgba(7, 11, 23, .72);
+            border: 1px solid var(--border);
+        }
+
+        .evidence-card {
+            border-radius: 17px;
+            padding: 18px;
+        }
+
+        .evidence-title {
+            font-size: 15px;
+            font-weight: 850;
+            margin-bottom: 8px;
+        }
+
+        .evidence-status {
+            color: #93a2ba;
+            font-size: 12px;
+            margin-bottom: 12px;
+        }
+
+        .bar {
+            height: 7px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: #263149;
+        }
+
+        .bar .risk-fill {
+            display: block;
+            height: 100%;
+            width: 0;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #8b5cf6, #ec4899);
+        }
+
+        .evidence-card p {
+            color: #d2d9e5;
+            font-size: 13px;
+            line-height: 1.55;
+        }
+
+        .evidence-risk {
+            color: #8997ad;
+            font-size: 12px;
+        }
+
+        .evidence-risk strong {
+            color: #e2e8f0;
+        }
+
+        /* ---------- MODEL OUTPUT ---------- */
 
         .evidence {
             display: grid;
@@ -146,401 +486,276 @@
         }
 
         .ev {
-            padding: 14px;
-            border: 1px solid #2a3441;
+            padding: 14px 16px;
             border-radius: 12px;
-            background: #10161d;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: center;
         }
 
         .ev strong {
-            display: block;
-            margin-bottom: 8px;
+            color: #e5e7eb;
         }
 
-        /* Risk bar */
-
-        .bar {
-            height: 8px;
-            background: #26303c;
-            border-radius: 20px;
-            overflow: hidden;
-            margin: 8px 0;
-        }
-
-        .bar .risk-fill {
-            display: block;
-            height: 100%;
-            background: white;
-            width: 0;
-        }
-
-        /* =========================
-           VIDEO INFORMATION
-        ========================= */
-
-        .video-info {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
-        .video-stat {
-            background: #10161d;
-            border: 1px solid #2a3441;
-            border-radius: 10px;
-            padding: 12px 16px;
-        }
-
-        /* =========================
-           FACT CHECKS
-        ========================= */
-
-        .fc {
-            margin-top: 10px;
-            padding: 12px;
-            border-left: 3px solid white;
-            background: #10161d;
-            border-radius: 6px;
-        }
-
-        .fc strong {
-            display: block;
-            margin-bottom: 5px;
-        }
-
-        .fc a {
-            color: white;
-        }
-
-        /* =========================
-           FRAME TIMELINE
-        ========================= */
-
-        .frame-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-            padding: 12px;
-            border: 1px solid #2a3441;
-            border-radius: 10px;
-            background: #10161d;
-        }
-
-        .frame-risk {
-            min-width: 100px;
-            text-align: right;
-            font-weight: bold;
-        }
-
-        /* =========================
-           RESPONSIVE
-        ========================= */
-
-        @media (max-width: 800px) {
-
-            .grid {
-                grid-template-columns: 1fr;
-            }
-
-            .hero h1 {
-                font-size: 32px;
-            }
-
-            .score {
-                font-size: 50px;
-            }
-
-            .frame-item {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .frame-risk {
-                text-align: left;
-            }
-        }
-
-        /* =========================
-        DEEPVERIFY RESULT UI
-        ========================= */
-
-        .result-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 30px;
-            margin-top: 20px;
-            padding: 25px;
-            background: #10161d;
-            border: 1px solid #2a3441;
-            border-radius: 16px;
-        }
-
-        .score-box {
-            flex: 1;
-        }
-
-        .score {
-            font-size: 72px;
-            line-height: 1;
-            font-weight: 800;
-            margin: 0;
-        }
-
-        .score-label {
-            color: #8e99a6;
-            font-size: 14px;
-            margin-top: 8px;
-        }
-
-        .verdict-box {
-            flex: 1;
-            text-align: right;
-        }
-
-        .verdict {
-            font-size: 26px;
-            font-weight: 800;
-            margin-bottom: 8px;
-        }
-
-        .verdict-subtitle {
-            color: #9da7b3;
-        }
-
-        /* Probability section */
-
-        .probability-section {
-            margin-top: 20px;
-        }
-
-        .probability-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-
-        .probability-bar {
-            height: 12px;
-            background: #26303c;
-            border-radius: 20px;
-            overflow: hidden;
-            display: flex;
-        }
-
-        .real-fill {
-            height: 100%;
-            background: #72d572;
-        }
-
-        .ai-fill {
-            height: 100%;
-            background: #e56b6b;
-        }
-
-        .probability-values {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-        }
-
-        .real-value {
-            color: #72d572;
-            font-weight: bold;
-        }
-
-        .ai-value {
-            color: #e56b6b;
-            font-weight: bold;
-        }
-
-        /* Evidence cards */
-
-        .evidence-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 14px;
-            margin-top: 15px;
-        }
-
-        .evidence-card {
-            background: #10161d;
-            border: 1px solid #2a3441;
-            border-radius: 14px;
-            padding: 18px;
-        }
-
-        .evidence-title {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .evidence-status {
-            font-size: 13px;
-            color: #8e99a6;
-            margin-bottom: 12px;
-        }
-
-        .evidence-risk {
-            font-size: 13px;
-            margin-top: 10px;
-            color: #9da7b3;
-        }
-
-        /* Technical details */
+        /* ---------- TECHNICAL ---------- */
 
         .tech-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
+            grid-template-columns: repeat(5, 1fr);
             gap: 12px;
-            margin-top: 15px;
         }
 
         .tech-item {
-            background: #10161d;
-            border: 1px solid #2a3441;
-            border-radius: 12px;
-            padding: 14px;
+            border-radius: 15px;
+            padding: 15px;
         }
 
         .tech-item span {
             display: block;
-            color: #8e99a6;
-            font-size: 12px;
-            margin-bottom: 5px;
+            color: #8290a8;
+            font-size: 11px;
+            margin-bottom: 7px;
+            text-transform: uppercase;
+            letter-spacing: .06em;
         }
 
         .tech-item strong {
             font-size: 16px;
         }
 
-        /* Responsive */
+        /* ---------- VIDEO / FRAME / FACT CHECK ---------- */
 
-        @media (max-width: 800px) {
+        .video-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
 
-            .result-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
+        .video-stat {
+            min-width: 150px;
+            flex: 1;
+            padding: 14px;
+            border-radius: 13px;
+        }
 
-            .verdict-box {
-                text-align: left;
-            }
+        .video-stat strong {
+            display: block;
+            margin-bottom: 6px;
+            color: #94a3b8;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
 
+        .frame-item {
+            padding: 14px 16px;
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .frame-item small {
+            margin-top: 4px;
+        }
+
+        .frame-risk {
+            text-align: right;
+            color: #fda4af;
+            font-weight: 900;
+        }
+
+        .frame-risk small {
+            color: #8290a8;
+            font-weight: 500;
+        }
+
+        .fc {
+            padding: 15px;
+            border-radius: 13px;
+            border-left: 3px solid var(--purple);
+        }
+
+        .fc strong {
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .fc a {
+            color: #a5b4fc;
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .fc a:hover {
+            text-decoration: underline;
+        }
+
+        /* ---------- FOOTER ---------- */
+
+        .footer {
+            text-align: center;
+            color: #64748b;
+            font-size: 11px;
+            margin-top: 35px;
+        }
+
+        /* ---------- RESPONSIVE ---------- */
+
+        @media (max-width: 900px) {
             .evidence-grid {
                 grid-template-columns: 1fr;
             }
 
             .tech-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 700px) {
+            .wrap {
+                width: min(100% - 20px, 1180px);
+                padding-top: 25px;
+            }
+
+            .grid,
+            .result-header {
+                grid-template-columns: 1fr;
+            }
+
+            .score-box {
+                justify-content: flex-start;
+            }
+
+            .verdict {
+                font-size: 25px;
+            }
+
+            .tech-grid {
                 grid-template-columns: 1fr 1fr;
+            }
+
+            .result {
+                padding: 18px;
+            }
+
+            .card {
+                padding: 19px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .tech-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero h1 {
+                font-size: 43px;
             }
         }
     </style>
 </head>
 
-
 <body>
-
     <div class="wrap">
 
-        <!-- =========================================
-             HEADER
-        ========================================== -->
+        <!-- =========================
+             HERO
+        ========================== -->
 
-        <div class="hero">
+        <header class="hero">
+            <div class="brand-mark">DV</div>
+
+            <div class="badge">AI-Powered Verification System</div>
 
             <h1>DeepVerify</h1>
 
             <p>
-                Multimodal deepfake + misinformation verification
-                — with evidence, not just a verdict.
+                Multimodal deepfake and misinformation verification —
+                analyze media, inspect evidence, and understand the result.
             </p>
+        </header>
 
-        </div>
 
-
-        <!-- =========================================
-             INPUT SECTION
-        ========================================== -->
+        <!-- =========================
+             INPUT
+        ========================== -->
 
         <div class="grid">
 
-            <!-- MEDIA ANALYSIS -->
-
             <div class="card">
-
                 <h2>Analyze Media</h2>
+                <p class="card-description">
+                    Upload an image, video, or audio file for AI-powered analysis.
+                </p>
 
                 <form method="post" enctype="multipart/form-data">
-
                     <input type="hidden" name="mode" value="media">
 
-                    <input type="file" name="file" accept=".png,.jpg,.jpeg,.webp,.mp4,.mov,.avi,.wav,.mp3,.m4a"
-                        required>
+                    <div class="upload-box">
+                        <div class="upload-icon">↑</div>
+                        <strong>Upload media for verification</strong>
 
-                    <button type="submit">
-                        Analyze File
-                    </button>
+                        <input
+                            type="file"
+                            name="file"
+                            accept=".png,.jpg,.jpeg,.webp,.mp4,.mov,.avi,.wav,.mp3,.m4a"
+                            required
+                        >
+                    </div>
 
+                    <button type="submit">Analyze File</button>
                 </form>
 
                 <small>
-                    Supports image, video and audio files.
-                    Video currently uses sampled frames.
+                    Supports image, video and audio files. Video currently uses sampled frames.
                 </small>
-
             </div>
 
-
-            <!-- CLAIM VERIFICATION -->
 
             <div class="card">
-
                 <h2>Verify a Claim</h2>
+                <p class="card-description">
+                    Check a written claim and review available fact-check evidence.
+                </p>
 
                 <form method="post">
-
                     <input type="hidden" name="mode" value="claim">
 
-                    <textarea name="claim" rows="6" placeholder="Paste a news claim, optionally with a source URL..."
-                        required></textarea>
+                    <textarea
+                        name="claim"
+                        rows="6"
+                        placeholder="Paste a news claim, optionally with a source URL..."
+                        required
+                    ></textarea>
 
-                    <button type="submit">
-                        Verify Claim
-                    </button>
-
+                    <button type="submit">Verify Claim</button>
                 </form>
 
                 <small>
-                    Fact-check lookup works when
-                    FACTCHECK_API_KEY is configured.
+                    Fact-check lookup works when FACTCHECK_API_KEY is configured.
                 </small>
-
             </div>
 
         </div>
 
 
-        <!-- =========================================
+        <!-- =========================
              ERROR
-        ========================================== -->
+        ========================== -->
 
         {% if error %}
-
         <div class="error">
-
             {{ error }}
-
         </div>
-
         {% endif %}
 
 
-        <!-- =========================================
+        <!-- =========================
              RESULTS
-        ========================================== -->
+        ========================== -->
 
         {% if result %}
 
@@ -548,23 +763,22 @@
 
             <h2>Verification Report</h2>
 
+            <!-- Score + verdict -->
+
             <div class="result-header">
 
                 <div class="score-box">
-
-                    <div class="score">
-                        {{ result.trust_score }}
+                    <div class="score-circle">
+                        <div class="score-inner">
+                            <div class="score">
+                                {{ result.trust_score }}
+                            </div>
+                            <div class="score-label">TRUST SCORE / 100</div>
+                        </div>
                     </div>
-
-                    <div class="score-label">
-                        TRUST SCORE / 100
-                    </div>
-
                 </div>
 
-
-                <div class="verdict-box">
-
+                <div>
                     <div class="verdict">
                         {{ result.label }}
                     </div>
@@ -572,16 +786,17 @@
                     <div class="verdict-subtitle">
                         {{ result.summary }}
                     </div>
-
                 </div>
 
             </div>
 
-            {% if result.real_probability is defined %}
 
+            <!-- AI probability -->
+
+            {% if result.real_probability is defined %}
             <div class="probability-section">
 
-                <h3>AI Generation Analysis</h3>
+                <h3 class="section-heading">AI Generation Analysis</h3>
 
                 <div class="probability-header">
                     <span>Real</span>
@@ -589,17 +804,18 @@
                 </div>
 
                 <div class="probability-bar">
+                    <div
+                        class="real-fill"
+                        data-probability="{{ result.real_probability }}"
+                    ></div>
 
-                    <div class="real-fill" data-probability="{{ result.real_probability }}">
-                    </div>
-
-                    <div class="ai-fill" data-probability="{{ result.ai_probability }}">
-                    </div>
-
+                    <div
+                        class="ai-fill"
+                        data-probability="{{ result.ai_probability }}"
+                    ></div>
                 </div>
 
                 <div class="probability-values">
-
                     <div class="real-value">
                         REAL {{ result.real_probability }}%
                     </div>
@@ -607,360 +823,256 @@
                     <div class="ai-value">
                         AI {{ result.ai_probability }}%
                     </div>
-
                 </div>
 
             </div>
-
             {% endif %}
 
-            <!-- =====================================
-                 MODEL OUTPUT
-            ====================================== -->
+
+            <!-- Model output -->
 
             {% if result.model_predictions %}
+            <div class="report-section">
+                <h3>Model Output</h3>
 
-            <h3>
-                Model Output
-            </h3>
-
-            <div class="evidence">
-
-                {% for p in result.model_predictions %}
-
-                <div class="ev">
-
-                    <strong>
-                        {{ p.label }}
-                    </strong>
-
-                    {{ (p.score * 100)|round(1) }}%
-
+                <div class="evidence">
+                    {% for p in result.model_predictions %}
+                    <div class="ev">
+                        <strong>{{ p.label }}</strong>
+                        <span>{{ (p.score * 100)|round(1) }}%</span>
+                    </div>
+                    {% endfor %}
                 </div>
-
-                {% endfor %}
-
             </div>
-
             {% endif %}
 
 
-            <!-- =====================================
-                 VIDEO INFORMATION
-            ====================================== -->
+            <!-- Video information -->
 
             {% if result.video_info %}
+            <div class="report-section">
+                <h3>Video Information</h3>
 
-            <h3>
-                Video Information
-            </h3>
+                <div class="video-info">
 
-            <div class="video-info">
+                    <div class="video-stat">
+                        <strong>Duration</strong>
+                        {{ result.video_info.duration }} seconds
+                    </div>
 
-                <div class="video-stat">
+                    <div class="video-stat">
+                        <strong>FPS</strong>
+                        {{ result.video_info.fps }}
+                    </div>
 
-                    <strong>
-                        Duration
-                    </strong>
-
-                    {{ result.video_info.duration }} seconds
-
-                </div>
-
-
-                <div class="video-stat">
-
-                    <strong>
-                        FPS
-                    </strong>
-
-                    {{ result.video_info.fps }}
+                    <div class="video-stat">
+                        <strong>Frames</strong>
+                        {{ result.video_info.frames }}
+                    </div>
 
                 </div>
-
-
-                <div class="video-stat">
-
-                    <strong>
-                        Frames
-                    </strong>
-
-                    {{ result.video_info.frames }}
-
-                </div>
-
             </div>
-
             {% endif %}
 
 
-            <!-- =====================================
-                 WHY?
-            ====================================== -->
-            <h3>Why this result?</h3>
+            <!-- Evidence -->
 
-            <div class="evidence-grid">
+            <div class="report-section">
+                <h3>Why this result?</h3>
 
-                {% for e in result.evidence %}
+                <div class="evidence-grid">
 
-                <div class="evidence-card">
+                    {% for e in result.evidence %}
+                    <div class="evidence-card">
 
-                    <div class="evidence-title">
-                        {{ e.name }}
-                    </div>
+                        <div class="evidence-title">
+                            {{ e.name }}
+                        </div>
 
-                    <div class="evidence-status">
+                        <div class="evidence-status">
+                            {% if e.risk <= 20 %}
+                                Low risk signal
+                            {% elif e.risk <= 50 %}
+                                Moderate signal
+                            {% else %}
+                                Strong risk signal
+                            {% endif %}
+                        </div>
 
-                        {% if e.risk <= 20 %} Low risk signal {% elif e.risk <=50 %} Moderate signal {% else %} Strong
-                            risk signal {% endif %} </div>
+                        <div class="bar">
+                            <span
+                                class="risk-fill"
+                                data-risk="{{ e.risk }}"
+                            ></span>
+                        </div>
 
-                            <div class="bar">
+                        <p>{{ e.detail }}</p>
 
-                                <span class="risk-fill" data-risk="{{ e.risk }}">
-                                </span>
-
-                            </div>
-
-                            <p>
-                                {{ e.detail }}
-                            </p>
-
-                            <div class="evidence-risk">
-
-                                Risk:
-                                <strong>{{ e.risk|round(1) }}/100</strong>
-
-                                &nbsp; · &nbsp;
-
-                                Weight:
-                                <strong>{{ e.weight }}</strong>
-
-                            </div>
+                        <div class="evidence-risk">
+                            Risk:
+                            <strong>{{ e.risk|round(1) }}/100</strong>
+                            &nbsp; · &nbsp;
+                            Weight:
+                            <strong>{{ e.weight }}</strong>
+                        </div>
 
                     </div>
-
                     {% endfor %}
 
                 </div>
+            </div>
 
-                
 
-                {% if result.forensics %}
+            <!-- Technical image analysis -->
 
-                <h3>
-                    Technical Image Analysis
-                </h3>
+            {% if result.forensics %}
+            <div class="report-section">
+                <h3>Technical Image Analysis</h3>
 
                 <div class="tech-grid">
 
                     <div class="tech-item">
                         <span>Resolution</span>
                         <strong>
-                            {{ result.forensics.width }}
-                            ×
-                            {{ result.forensics.height }}
+                            {{ result.forensics.width }} × {{ result.forensics.height }}
                         </strong>
                     </div>
 
                     <div class="tech-item">
                         <span>Aspect Ratio</span>
-                        <strong>
-                            {{ result.forensics.aspect_ratio }}
-                        </strong>
+                        <strong>{{ result.forensics.aspect_ratio }}</strong>
                     </div>
 
                     <div class="tech-item">
                         <span>Sharpness</span>
-                        <strong>
-                            {{ result.forensics.sharpness }}
-                        </strong>
+                        <strong>{{ result.forensics.sharpness }}</strong>
                     </div>
 
                     <div class="tech-item">
                         <span>Noise Level</span>
-                        <strong>
-                            {{ result.forensics.noise_level }}
-                        </strong>
+                        <strong>{{ result.forensics.noise_level }}</strong>
                     </div>
 
                     <div class="tech-item">
                         <span>Entropy</span>
-                        <strong>
-                            {{ result.forensics.entropy }}
-                        </strong>
+                        <strong>{{ result.forensics.entropy }}</strong>
                     </div>
 
                 </div>
+            </div>
+            {% endif %}
 
-                {% endif %}
 
+            <!-- Video frame timeline -->
 
-                
-
-                <!-- =====================================
-                 VIDEO FRAME TIMELINE
-            ====================================== -->
-
-                {% if result.frame_results %}
-
-                <h3>
-                    Frame Timeline
-                </h3>
-
+            {% if result.frame_results %}
+            <div class="report-section">
+                <h3>Frame Timeline</h3>
 
                 <div class="evidence">
 
                     {% for f in result.frame_results %}
-
                     <div class="frame-item">
 
                         <div>
-
-                            <strong>
-                                Frame {{ f.frame }}
-                            </strong>
-
+                            <strong>Frame {{ f.frame }}</strong>
                             <small>
                                 Timestamp: {{ f.time }} seconds
                             </small>
-
                         </div>
 
-
                         <div class="frame-risk">
-
                             {{ (f.fake_probability * 100)|round(1) }}%
-
-                            <br>
-
-                            <small>
-                                fake probability
-                            </small>
-
+                            <small>fake probability</small>
                         </div>
 
                     </div>
-
                     {% endfor %}
 
                 </div>
-
-                {% endif %}
-
-
-                <!-- =====================================
-                 FACT CHECK RESULTS
-            ====================================== -->
-
-                {% if result.factchecks %}
-
-                <h3>
-                    Existing Fact Checks
-                </h3>
+            </div>
+            {% endif %}
 
 
-                {% for fc in result.factchecks %}
+            <!-- Fact checks -->
 
-                <div class="fc">
+            {% if result.factchecks %}
+            <div class="report-section">
+                <h3>Existing Fact Checks</h3>
 
-                    <strong>
+                <div class="evidence">
 
-                        {{ fc.publisher or "Publisher" }}
-
-                    </strong>
-
-
-                    <div>
+                    {% for fc in result.factchecks %}
+                    <div class="fc">
 
                         <strong>
-                            Rating:
+                            {{ fc.publisher or "Publisher" }}
                         </strong>
 
-                        {{ fc.rating or "Rating unavailable" }}
+                        <div>
+                            <strong>Rating:</strong>
+                            {{ fc.rating or "Rating unavailable" }}
+                        </div>
+
+                        {% if fc.title %}
+                        <div style="margin-top: 7px;">
+                            {{ fc.title }}
+                        </div>
+                        {% endif %}
+
+                        {% if fc.url %}
+                        <div style="margin-top: 10px;">
+                            <a
+                                href="{{ fc.url }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                Read Full Fact Check →
+                            </a>
+                        </div>
+                        {% endif %}
 
                     </div>
-
-
-                    {% if fc.title %}
-
-                    <div>
-
-                        {{ fc.title }}
-
-                    </div>
-
-                    {% endif %}
-
-
-                    {% if fc.url %}
-
-                    <br>
-
-                    <a href="{{ fc.url }}" target="_blank" rel="noopener noreferrer">
-                        Read Full Fact Check
-                    </a>
-
-                    {% endif %}
+                    {% endfor %}
 
                 </div>
-
-                {% endfor %}
-
-                {% endif %}
-
-
             </div>
-
             {% endif %}
 
         </div>
 
+        {% endif %}
 
-        <!-- =============================================
+
+        <div class="footer">
+            DeepVerify · Multimodal AI verification with evidence
+        </div>
+
+    </div>
+
+
+    <!-- =========================
          JAVASCRIPT
-    ============================================== -->
+    ========================== -->
 
-        <script>
+    <script>
+        document.querySelectorAll(".risk-fill").forEach(function (bar) {
+            const risk = parseFloat(bar.dataset.risk);
 
-            /*
-             * Convert data-risk values into
-             * the visual width of the risk bars.
-             *
-             * Example:
-             *
-             * data-risk="75"
-             *
-             * becomes:
-             *
-             * width: 75%
-             */
+            if (!isNaN(risk)) {
+                const safeRisk = Math.max(0, Math.min(100, risk));
+                bar.style.width = safeRisk + "%";
+            }
+        });
 
-            document
-                .querySelectorAll(".risk-fill")
-                .forEach(function (bar) {
+        document.querySelectorAll("[data-probability]").forEach(function (bar) {
+            const probability = parseFloat(bar.dataset.probability);
 
-                    const risk = parseFloat(
-                        bar.dataset.risk
-                    );
-
-                    if (!isNaN(risk)) {
-
-                        const safeRisk = Math.max(
-                            0,
-                            Math.min(100, risk)
-                        );
-
-                        bar.style.width =
-                            safeRisk + "%";
-                    }
-
-                });
-            document.querySelectorAll("[data-probability]").forEach(function (bar) {
-                const probability = bar.dataset.probability;
-                bar.style.width = probability + "%";
-            });
-        </script>
+            if (!isNaN(probability)) {
+                bar.style.width = Math.max(0, Math.min(100, probability)) + "%";
+            }
+        });
+    </script>
 
 </body>
-
 </html>
