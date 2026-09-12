@@ -478,6 +478,137 @@
             color: #e2e8f0;
         }
 
+
+        /* ---------- CLAIM VERIFICATION UI ---------- */
+        .claim-verdict-card {
+            margin-top: 24px;
+            padding: 22px;
+            border: 1px solid rgba(139, 92, 246, .22);
+            border-radius: 18px;
+            background: linear-gradient(180deg, rgba(139, 92, 246, .08), rgba(7, 11, 23, .72));
+        }
+        .claim-verdict-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 18px;
+        }
+        .claim-verdict-label {
+            font-size: 12px;
+            color: #a5b4fc;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            margin-bottom: 7px;
+        }
+        .claim-verdict-text {
+            font-size: 27px;
+            line-height: 1.2;
+            font-weight: 900;
+            color: #f8fafc;
+        }
+        .claim-score-mini {
+            min-width: 92px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            text-align: center;
+            background: rgba(6, 10, 22, .72);
+            border: 1px solid var(--border);
+        }
+        .claim-score-mini strong {
+            display: block;
+            font-size: 25px;
+            line-height: 1;
+        }
+        .claim-score-mini span {
+            display: block;
+            margin-top: 5px;
+            color: #8290a8;
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .claim-text-box {
+            margin-top: 18px;
+            padding: 15px 16px;
+            border-radius: 13px;
+            background: rgba(6, 10, 22, .55);
+            border: 1px solid rgba(148, 163, 184, .12);
+        }
+        .claim-text-box span {
+            display: block;
+            color: #8290a8;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: .07em;
+            text-transform: uppercase;
+            margin-bottom: 7px;
+        }
+        .claim-text-box p {
+            margin: 0;
+            color: #e2e8f0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .claim-note {
+            margin-top: 12px;
+            color: #94a3b8;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .factcheck-empty {
+            padding: 18px;
+            border-radius: 14px;
+            border: 1px dashed rgba(251, 191, 36, .28);
+            background: rgba(120, 53, 15, .10);
+            color: #fde68a;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .factcheck-card {
+            padding: 17px;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            background: rgba(7, 11, 23, .72);
+        }
+
+        .factcheck-publisher {
+            color: #f8fafc;
+            font-size: 15px;
+            font-weight: 900;
+        }
+        .factcheck-rating {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            color: #c4b5fd;
+            background: rgba(139, 92, 246, .10);
+            border: 1px solid rgba(139, 92, 246, .20);
+            font-size: 11px;
+            font-weight: 800;
+        }
+        .factcheck-title {
+            margin-top: 11px;
+            color: #dbe4f0;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+        .factcheck-link {
+            display: inline-block;
+            margin-top: 12px;
+            color: #a5b4fc;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 800;
+        }
+        .factcheck-link:hover { text-decoration: underline; }
+
+        @media (max-width: 600px) {
+            .claim-verdict-top { flex-direction: column; }
+            .claim-score-mini { width: 100%; }
+        }
+
         /* ---------- MODEL OUTPUT ---------- */
 
         .evidence {
@@ -688,7 +819,7 @@
             <div class="card">
                 <h2>Analyze Media</h2>
                 <p class="card-description">
-                    Upload an image, video, or audio file for AI-powered analysis.
+                    Upload an image, video file for AI-powered analysis.
                 </p>
 
                 <form method="post" enctype="multipart/form-data">
@@ -710,7 +841,7 @@
                 </form>
 
                 <small>
-                    Supports image, video and audio files. Video currently uses sampled frames.
+                    Supports image, video files. Video currently uses sampled frames.
                 </small>
             </div>
 
@@ -762,6 +893,128 @@
         <div class="card result">
 
             <h2>Verification Report</h2>
+
+            {% if result.type == "claim" %}
+
+            <!-- CLAIM VERIFICATION REPORT -->
+            <div class="claim-verdict-card">
+                <div class="claim-verdict-top">
+                    <div>
+                        <div class="claim-verdict-label">Verdict</div>
+                        <div class="claim-verdict-text">
+                            {{ result.verdict or result.label }}
+                        </div>
+                    </div>
+
+                    <div class="claim-score-mini">
+                        <strong>{{ result.trust_score }}</strong>
+                        <span>Trust / 100</span>
+                    </div>
+                </div>
+
+                <div class="claim-text-box">
+                    <span>Claim analyzed</span>
+                    <p>{{ result.claim }}</p>
+                </div>
+
+                <div class="claim-note">
+                    {{ result.summary }}
+                </div>
+            </div>
+
+            <!-- WHY -->
+            <div class="report-section">
+                <h3>Why this verdict?</h3>
+                <div class="evidence-grid">
+                    {% for e in result.evidence %}
+                    <div class="evidence-card">
+                        <div class="evidence-title">{{ e.name }}</div>
+
+                        <div class="evidence-status">
+                            {% if e.risk >= 75 %}
+                                Strong risk signal
+                            {% elif e.risk >= 50 %}
+                                Verification concern
+                            {% elif e.risk >= 20 %}
+                                Limited signal
+                            {% else %}
+                                Low risk signal
+                            {% endif %}
+                        </div>
+
+                        <div class="bar">
+                            <span class="risk-fill" data-risk="{{ e.risk }}"></span>
+                        </div>
+
+                        <p>{{ e.detail }}</p>
+
+                        <div class="evidence-risk">
+                            Risk: <strong>{{ e.risk|round(1) }}/100</strong>
+                            &nbsp; · &nbsp;
+                            Weight: <strong>{{ e.weight }}</strong>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- EVIDENCE -->
+            <div class="report-section">
+                <h3>Evidence</h3>
+                <div class="evidence">
+                    {% for e in result.evidence %}
+                    <div class="ev">
+                        <div>
+                            <strong>{{ e.name }}</strong>
+                            <small style="margin-top:4px;">{{ e.detail }}</small>
+                        </div>
+                        <span>{{ e.risk|round(1) }}/100 risk</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- FACT-CHECK RESULTS -->
+            <div class="report-section">
+                <h3>Fact-check results</h3>
+
+                {% if result.factchecks %}
+                    <div class="evidence">
+                        {% for fc in result.factchecks %}
+                        <div class="factcheck-card">
+                            <div class="factcheck-publisher">
+                                {{ fc.publisher or "Publisher unavailable" }}
+                            </div>
+
+                            <div class="factcheck-rating">
+                                {{ fc.rating or "Rating unavailable" }}
+                            </div>
+
+                            {% if fc.title %}
+                            <div class="factcheck-title">{{ fc.title }}</div>
+                            {% endif %}
+
+                            {% if fc.url %}
+                            <a class="factcheck-link"
+                               href="{{ fc.url }}"
+                               target="_blank"
+                               rel="noopener noreferrer">
+                                Read full fact check →
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="factcheck-empty">
+                        <strong>No matching fact check was found.</strong><br>
+                        This means the claim is currently unverified by the available
+                        fact-check source. It does <strong>not</strong> mean the claim is true.
+                    </div>
+                {% endif %}
+            </div>
+
+            {% else %}
 
             <!-- Score + verdict -->
 
@@ -1037,6 +1290,8 @@
 
                 </div>
             </div>
+            {% endif %}
+
             {% endif %}
 
         </div>
