@@ -2,15 +2,12 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-import torch
-from PIL import Image
 
-from .image_analyzer import model, transform, TEMPERATURE
+from .image_analyzer import detect_ai_image
 from .scoring import score_from_evidence, label
 
 
 def analyze_video(path: Path):
-
     cap = cv2.VideoCapture(str(path))
 
     if not cap.isOpened():
@@ -41,70 +38,106 @@ def analyze_video(path: Path):
         if not ok:
             continue
 
-        # OpenCV BGR → RGB
-        rgb = cv2.cvtColor(
-            frame,
-            cv2.COLOR_BGR2RGB
+        # OpenCV gives BGR.
+        # Convert to RGB for the image detector.
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Temporary frame used by the existing Kaan image detector.
+        temp_path = path.parent / "_temp_video_frame.jpg"
+
+        cv2.imwrite(
+            str(temp_path),
+            cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
         )
 
-        # Convert NumPy image → PIL
-        image = Image.fromarray(rgb)
+        # Run Kaan image detector
+        result = detect_ai_image(temp_path)
 
-        # Apply Kaan preprocessing
-        image = transform(image).unsqueeze(0)
+        if result.get("prediction") == "ERROR":
+            try:
+                temp_path.unlink()
+            except Exception:
+                pass
 
-        # Kaan inference
-        with torch.no_grad():
-            logit = model(image).squeeze().item()
+            cap.release()
 
-        # Temperature calibration
-        calibrated_logit = logit / TEMPERATURE
+            raise ValueError(
+                result.get(
+                    "error",
+                    "Image detector failed while analyzing a video frame."
+                )
+            )
 
-        p_real = torch.sigmoid(
-            torch.tensor(calibrated_logit)
-        ).item()
+        # IMPORTANT:
+        # detect_ai_image() returns ai_probability as a percentage
+        # such as 78.56, NOT 0.7856.
+        #
+        # Convert percentage -> probability here.
+        ai_percentage = float(
+            result.get("ai_probability", 0)
+        )
 
-        p_ai = 1 - p_real
+        ai_probability = ai_percentage / 100.0
+
+        real_probability = 1.0 - ai_probability
 
         frames.append({
             "frame": int(idx),
             "time": round(idx / fps, 2),
-            "real_probability": round(p_real * 100, 2),
-            "ai_probability": round(p_ai * 100, 2)
+
+            # Keep this internally as 0-1.
+            # index.html multiplies it by 100 for display.
+            "fake_probability": round(ai_probability, 4),
+
+            # Useful if we want to display this later.
+            "real_probability": round(real_probability, 4)
         })
+
+        # Delete temporary frame
+        try:
+            temp_path.unlink()
+        except Exception:
+            pass
 
     cap.release()
 
     if not frames:
         raise ValueError("No readable frames were found.")
 
+    # --------------------------------------------------
     # Average AI probability across sampled frames
-    avg_ai = float(
+    # --------------------------------------------------
+
+    avg = float(
         np.mean([
-            x["ai_probability"]
-            for x in frames
+            frame["fake_probability"]
+            for frame in frames
         ])
     )
 
-    # Frames where AI probability >= 60%
+    # --------------------------------------------------
+    # Find suspicious frames
+    # --------------------------------------------------
+    # Threshold is now correctly 0.65 = 65%
     suspicious = [
-        x for x in frames
-        if x["ai_probability"] >= 60
+        frame
+        for frame in frames
+        if frame["fake_probability"] >= 0.65
     ]
 
-    # -----------------------------
-    # Evidence
-    # -----------------------------
+    # --------------------------------------------------
+    # Build evidence
+    # --------------------------------------------------
 
     evidence = [
         {
             "name": "Frame-level AI analysis",
-            "risk": avg_ai,
+            "risk": avg * 100,
             "weight": 0.75,
             "detail": (
                 f"Average AI probability across "
                 f"{len(frames)} sampled frames: "
-                f"{avg_ai:.1f}%."
+                f"{avg * 100:.1f}%."
             )
         }
     ]
@@ -119,9 +152,8 @@ def analyze_video(path: Path):
             ),
             "weight": 0.55,
             "detail": (
-                f"{len(suspicious)} sampled "
-                f"frame(s) had AI probability "
-                f"of at least 60%."
+                f"{len(suspicious)} sampled frame(s) "
+                f"exceeded the 65% AI-probability threshold."
             )
         })
 
@@ -132,14 +164,15 @@ def analyze_video(path: Path):
             "risk": 5,
             "weight": 0.25,
             "detail": (
-                "No sampled frame exceeded "
-                "the 60% AI threshold. "
-                "This does not prove the video "
-                "is authentic."
+                "No sampled frame exceeded 65%. "
+                "This does not prove the video is authentic."
             )
         })
 
-    # Short video warning
+    # --------------------------------------------------
+    # Very short video
+    # --------------------------------------------------
+
     if duration < 2:
 
         evidence.append({
@@ -152,8 +185,15 @@ def analyze_video(path: Path):
             )
         })
 
-    # Calculate DeepVerify trust score
+    # --------------------------------------------------
+    # Calculate trust score
+    # --------------------------------------------------
+
     trust = score_from_evidence(evidence)
+
+    # --------------------------------------------------
+    # Final result
+    # --------------------------------------------------
 
     return {
         "type": "video",
@@ -163,10 +203,12 @@ def analyze_video(path: Path):
         "label": label(trust),
 
         "summary": (
-            "Prototype video analysis samples "
-            "frames using the Kaan AI image detector. "
-            "It does not yet perform true temporal "
-            "or lip-sync forensics."
+            "DeepVerify sampled frames from the video "
+            "and analyzed them using the Kaan AI-image "
+            "detector. The frame probabilities were "
+            "aggregated to estimate the overall AI-generated "
+            "visual risk. This prototype does not yet perform "
+            "true temporal or lip-sync deepfake analysis."
         ),
 
         "video_info": {

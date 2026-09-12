@@ -7,3 +7,4 @@ __pycache__/
 uploads/
 kaan_model/model.safetensors
 kaan_model/
+testing/
